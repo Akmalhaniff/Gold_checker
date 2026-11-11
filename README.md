@@ -25,3 +25,10 @@ credentials and removes them from the address bar.
 ## Security
 Anyone holding the three values can open the doors. Keep the device locked and use a
 strong token. No credentials are committed to this repository.
+
+## Gold price
+`gold/index.html` is a separate one-page daily gold price checker (e.g. `.../gold/`).
+It shows today's price per gram, ounce, kilogram and tael (MYR by default, switchable),
+916/999 and other purities, the change vs yesterday, and a 7/30/90-day chart. It refreshes
+every time you open it and saves the last prices for offline use. Add it to the home
+screen the same way for a one-tap app. No API keys needed.
