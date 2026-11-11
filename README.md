@@ -1,5 +1,8 @@
 # Office Door
 
+> The main page (`index.html`) is now the gold price checker — see below. The door app
+> lives at `door.html`.
+
 A small web app that opens the office access doors served by `access.tiketbas.my`.
 
 That site is an ASP.NET **Blazor Server** app: the open buttons fire a server-side
@@ -27,7 +30,7 @@ Anyone holding the three values can open the doors. Keep the device locked and u
 strong token. No credentials are committed to this repository.
 
 ## Gold price
-`gold/index.html` is a separate one-page daily gold price checker (e.g. `.../gold/`).
+`index.html` (the main page) is a one-page daily gold price checker.
 It shows today's price per gram, ounce, kilogram and tael (MYR by default, switchable),
 916/999 and other purities, the change vs yesterday, and a 7/30/90-day chart. It refreshes
 every time you open it and saves the last prices for offline use. Add it to the home
