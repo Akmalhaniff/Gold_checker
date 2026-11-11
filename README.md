@@ -2,10 +2,12 @@
 
 A one-page daily gold price checker (`index.html`).
 
-- Today's price per gram, troy ounce, kilogram and tael — MYR by default, switchable to
-  USD, SGD, IDR, EUR or GBP — plus the USD spot price.
-- Change vs. yesterday, and per-gram prices for 999, 916, 875, 750 and 585 gold.
-- A 7/30/90-day daily trend chart (tap or hover for a day's price).
+- Opens on today's **916 (22K)** price per gram in RM, with a plain "up/down since
+  yesterday" note. Tap 999, 835, 750 or 375 to switch (the choice is remembered).
+- Bahasa Melayu by default, with an English switch.
+- "How much is my jewellery worth?" calculator: type the grams, get the gold value.
+- A 7-day / 1-month / 3-month chart with the lowest and highest price.
+- "More details" has pure gold, ounce, tael, world USD price and other currencies.
 - Refreshes each time you open it and every 30 minutes while open; the last prices are
   saved on the device so it still shows something offline.
 
