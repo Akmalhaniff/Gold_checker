@@ -1,9 +1,0 @@
-{
-  "name": "Office Door",
-  "short_name": "Door",
-  "start_url": "door.html",
-  "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
-  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
-}
