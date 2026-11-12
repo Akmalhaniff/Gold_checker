@@ -59,4 +59,4 @@ happens, open the Actions tab and re-enable it. Scheduled runs can start a few m
 late. Actions minutes are free for public repositories (a private repo would use up the
 free monthly minutes with a 15-minute schedule).
 
-Live page: https://akmalhaniff.github.io/gold_checker/
+Live page: https://akmalhaniff.github.io/Gold_checker/

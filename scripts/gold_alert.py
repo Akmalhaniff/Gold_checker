@@ -35,7 +35,7 @@ CONFIG = ROOT / "alert.json"
 STATE = ROOT / "alert-state.json"
 OZ = 31.1034768  # grams per troy ounce
 PURITY = {"999": 0.999, "916": 0.916, "835": 0.835, "750": 0.750, "375": 0.375}
-PAGE_URL = "https://akmalhaniff.github.io/gold_checker/"
+PAGE_URL = "https://akmalhaniff.github.io/Gold_checker/"
 MYT = timezone(timedelta(hours=8))
 
 DAILY = [
