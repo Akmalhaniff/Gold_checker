@@ -21,12 +21,18 @@ rates) and [gold-api.com](https://gold-api.com) (live USD spot). No API keys nee
 
 ## Telegram alert when the price drops
 A GitHub Actions job (`.github/workflows/gold-alert.yml`) runs **on GitHub's servers every
-hour** — no PC or phone needs to stay on. It sends **one Telegram message** when the price
-goes below your target, then stays quiet until the price has gone back above the target.
+15 minutes** — no PC or phone needs to stay on. It sends **one Telegram message** when the
+price goes below your target, then stays quiet until the price has gone back above the target.
 
-**Change the target:** edit `alert.json` on GitHub (the pencil icon), e.g.
-`"below": 335`. `"purity"` can be `916`, `999`, `835`, `750` or `375`; set
-`"enabled": false` to pause. The web page shows the current target under the price.
+**Change the target — any of these:**
+- **Telegram:** send the bot `/sasaran 470` (916 below RM 470/g), `/sasaran 999 520`
+  (change gold type too), or just `470`. Other commands: `/harga` (prices now),
+  `/henti` (pause), `/mula` (resume). The bot replies within ~15 minutes (it only checks
+  messages when the job runs). Only chat IDs in `TELEGRAM_CHAT_ID` can change settings.
+- **GitHub:** Actions → Gold price alert → Run workflow → type the price in the box.
+- **By hand:** edit `alert.json` (`"below"`, `"purity"`, `"enabled"`).
+
+The web page shows the current target under the price.
 
 **One-time setup**
 1. In Telegram, open **@BotFather** → `/newbot` → choose a name and a username ending in
@@ -48,5 +54,9 @@ goes below your target, then stays quiet until the price has gone back above the
 Email also works (add `SMTP_USER`, `SMTP_PASSWORD` — a Gmail app password — and
 `ALERT_EMAIL_TO`); if both are set, both are sent.
 
-Note: GitHub pauses scheduled jobs in a repo with no activity for 60 days; if that
-happens, open the Actions tab and re-enable it. Hourly runs can start a few minutes late.
+Notes: GitHub pauses scheduled jobs in a repo with no activity for 60 days; if that
+happens, open the Actions tab and re-enable it. Scheduled runs can start a few minutes
+late. Actions minutes are free for public repositories (a private repo would use up the
+free monthly minutes with a 15-minute schedule).
+
+Live page: https://akmalhaniff.github.io/gold_checker/

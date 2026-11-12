@@ -5,7 +5,10 @@ target in alert.json.
 Run by .github/workflows/gold-alert.yml on a schedule. Standard library only.
 
 Sends once when the price crosses below the target, then stays quiet until the price
-has gone back above it (state is kept in alert-state.json), so it does not email every hour.
+has gone back above it (state is kept in alert-state.json), so it does not repeat every run.
+
+The target can be changed by sending /sasaran <price> to the Telegram bot (read on the next
+run), or by typing it into "Run workflow" on GitHub (INPUT_BELOW / INPUT_PURITY).
 
 Environment (GitHub repository secrets) — set Telegram, email, or both:
   TELEGRAM_BOT_TOKEN         token from @BotFather
@@ -32,7 +35,7 @@ CONFIG = ROOT / "alert.json"
 STATE = ROOT / "alert-state.json"
 OZ = 31.1034768  # grams per troy ounce
 PURITY = {"999": 0.999, "916": 0.916, "835": 0.835, "750": 0.750, "375": 0.375}
-PAGE_URL = "https://akmalhaniff.github.io/office-door/"
+PAGE_URL = "https://akmalhaniff.github.io/gold_checker/"
 MYT = timezone(timedelta(hours=8))
 
 DAILY = [
@@ -73,20 +76,27 @@ def _list(name):
     return [a.strip() for a in os.environ.get(name, "").split(",") if a.strip()]
 
 
-def send_telegram(subject, body):
+def tg_api(method, payload, timeout=20):
     token = os.environ["TELEGRAM_BOT_TOKEN"].strip()
-    ok = 0
-    for chat in _list("TELEGRAM_CHAT_ID"):
-        data = json.dumps({"chat_id": chat, "text": f"{subject}\n\n{body}",
-                           "disable_web_page_preview": True}).encode()
-        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=data,
-                                     headers={"Content-Type": "application/json"})
-        try:
-            with urllib.request.urlopen(req, timeout=20) as r:
-                ok += bool(json.load(r).get("ok"))
-        except urllib.error.HTTPError as e:
-            # Most common: 403 = that person has not pressed Start in the bot yet; 400 = wrong chat ID.
-            print(f"telegram send failed for one chat ({e.code}): {e.read().decode(errors='replace')}", file=sys.stderr)
+    req = urllib.request.Request(f"https://api.telegram.org/bot{token}/{method}",
+                                 data=json.dumps(payload).encode(),
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.load(r)
+
+
+def tg_send(chat, text):
+    try:
+        return bool(tg_api("sendMessage", {"chat_id": chat, "text": text,
+                                           "disable_web_page_preview": True}).get("ok"))
+    except urllib.error.HTTPError as e:
+        # Most common: 403 = that person has not pressed Start in the bot yet; 400 = wrong chat ID.
+        print(f"telegram send failed for one chat ({e.code}): {e.read().decode(errors='replace')}", file=sys.stderr)
+        return False
+
+
+def send_telegram(subject, body):
+    ok = sum(tg_send(chat, f"{subject}\n\n{body}") for chat in _list("TELEGRAM_CHAT_ID"))
     print(f"telegram sent to {ok} chat(s)")
     if not ok:
         raise SystemExit("Telegram message was not delivered to anyone.")
@@ -125,18 +135,128 @@ def notify(subject, body):
         send_email(subject, body)
 
 
+def parse_target(text):
+    """'/sasaran 470', '470', 'RM470.50', '/sasaran 999 520' -> (purity or None, price) or None."""
+    words = text.lower().replace("rm", " ").replace(",", "").split()
+    if words and words[0].startswith("/"):
+        words = words[1:]
+    nums = []
+    for w in words:
+        try:
+            nums.append(float(w))
+        except ValueError:
+            return None
+    if len(nums) == 1 and 1 <= nums[0] <= 100000:
+        return None, nums[0]
+    if len(nums) == 2 and str(int(nums[0])) in PURITY and 1 <= nums[1] <= 100000:
+        return str(int(nums[0])), nums[1]
+    return None
+
+
+def handle_telegram_commands(cfg, state, pure):
+    """Read messages sent to the bot since the last run and act on them. Returns True if cfg changed.
+
+    Only chats listed in TELEGRAM_CHAT_ID can change anything. Replies arrive at the next run
+    (the workflow runs every 15 minutes), because nothing is online in between."""
+    if not os.environ.get("TELEGRAM_BOT_TOKEN", "").strip():
+        return False
+    allowed = set(_list("TELEGRAM_CHAT_ID"))
+    try:
+        res = tg_api("getUpdates", {"offset": state.get("tg_offset", 0), "timeout": 0,
+                                    "allowed_updates": ["message"]})
+    except Exception as e:
+        print(f"could not read bot messages: {e}", file=sys.stderr)
+        return False
+    changed = False
+    for upd in res.get("result", []):
+        state["tg_offset"] = upd["update_id"] + 1
+        msg = upd.get("message") or {}
+        chat = str((msg.get("chat") or {}).get("id", ""))
+        text = (msg.get("text") or "").strip()
+        if not chat or not text:
+            continue
+        if chat not in allowed:
+            tg_send(chat, f"Chat ID anda: {chat}\nMinta pemilik bot tambah nombor ini dalam "
+                          f"TELEGRAM_CHAT_ID supaya anda dapat amaran harga emas.")
+            continue
+
+        purity = str(cfg.get("purity", "916"))
+        cmd = text.split()[0].lower().split("@")[0]
+        parsed = parse_target(text) if cmd in ("/sasaran", "/target") or not text.startswith("/") else None
+
+        if parsed:
+            new_purity, below = parsed
+            purity = new_purity or purity
+            cfg.update({"purity": purity, "below": round(below, 2), "enabled": True})
+            changed = True
+            now_p = pure * PURITY[purity]
+            note = ("⚠️ Harga sekarang sudah di bawah sasaran ini — amaran dihantar sekarang."
+                    if now_p < below else
+                    f"Saya akan beritahu bila emas {purity} turun bawah RM {below:.2f}.")
+            reply = (f"✅ Sasaran ditukar: emas {purity} bawah RM {below:.2f} segram.\n"
+                     f"Harga sekarang: RM {now_p:.2f}\n{note}")
+        elif cmd in ("/harga", "/price"):
+            lines = [f"Emas {k}: RM {pure * f:.2f}" for k, f in PURITY.items()]
+            reply = ("💰 Harga emas segram sekarang:\n" + "\n".join(lines) +
+                     f"\n\nSasaran: emas {purity} bawah RM {float(cfg['below']):.2f}"
+                     + ("" if cfg.get("enabled", True) else " (amaran dihentikan)") + f"\n{PAGE_URL}")
+        elif cmd in ("/henti", "/stop"):
+            cfg["enabled"] = False
+            changed = True
+            reply = "⏸ Amaran dihentikan. Hantar /mula untuk sambung semula."
+        elif cmd in ("/mula", "/resume"):
+            cfg["enabled"] = True
+            changed = True
+            reply = f"▶️ Amaran disambung: emas {purity} bawah RM {float(cfg['below']):.2f}."
+        else:
+            reply = (f"Sasaran sekarang: emas {purity} bawah RM {float(cfg['below']):.2f} segram"
+                     + ("" if cfg.get("enabled", True) else " (dihentikan)") + ".\n"
+                     f"Harga emas {purity} sekarang: RM {pure * PURITY.get(purity, .916):.2f}\n\n"
+                     "Arahan:\n"
+                     "• /sasaran 470 — beritahu bila harga bawah RM 470\n"
+                     "• /sasaran 999 520 — tukar jenis emas dan harga\n"
+                     "• /harga — harga semua jenis emas sekarang\n"
+                     "• /henti — hentikan amaran · /mula — sambung\n\n"
+                     "Bot memeriksa mesej setiap 15 minit, jadi balasan mungkin lambat sedikit.")
+        tg_send(chat, reply)
+    return changed
+
+
 def main():
     cfg = json.loads(CONFIG.read_text())
+    state = json.loads(STATE.read_text()) if STATE.exists() else {}
+    before_state = json.dumps(state, sort_keys=True)
+    test = os.environ.get("FORCE_TEST") == "1"
+    pure = pure_price_per_gram_myr()
+    now = datetime.now(MYT).strftime("%d %b %Y, %I:%M %p")
+
+    cfg_changed = False
+    # Target typed into "Run workflow" on GitHub.
+    if os.environ.get("INPUT_BELOW", "").strip():
+        parsed = parse_target(os.environ["INPUT_BELOW"])
+        if not parsed:
+            raise SystemExit(f"Not a price: {os.environ['INPUT_BELOW']!r}")
+        cfg.update({"below": round(parsed[1], 2), "enabled": True})
+        if parsed[0]:
+            cfg["purity"] = parsed[0]
+        cfg_changed = True
+    if os.environ.get("INPUT_PURITY", "").strip() in PURITY:
+        cfg["purity"] = os.environ["INPUT_PURITY"].strip()
+        cfg_changed = True
+    # Commands sent to the Telegram bot.
+    cfg_changed |= handle_telegram_commands(cfg, state, pure)
+    if cfg_changed:
+        CONFIG.write_text(json.dumps(cfg, indent=2) + "\n")
+        print(f"target changed: {cfg}")
+    if json.dumps(state, sort_keys=True) != before_state:
+        # Save the bot-message offset now, so commands are not handled twice if sending fails below.
+        STATE.write_text(json.dumps(state, indent=2) + "\n")
+
     purity = str(cfg.get("purity", "916"))
     target = float(cfg["below"])
-    factor = PURITY.get(purity, 0.916)
-    test = os.environ.get("FORCE_TEST") == "1"
-
-    price = pure_price_per_gram_myr() * factor
-    now = datetime.now(MYT).strftime("%d %b %Y, %I:%M %p")
+    price = pure * PURITY.get(purity, 0.916)
     print(f"{purity}: RM {price:.2f}/g, target below RM {target:.2f}")
 
-    state = json.loads(STATE.read_text()) if STATE.exists() else {}
     was_below = bool(state.get("below")) and state.get("target") == target and state.get("purity") == purity
     is_below = price < target
 
@@ -147,7 +267,8 @@ def main():
             f"(Test message — the gold price alert is working.)\n\n"
             f"Emas {purity} sekarang: RM {price:.2f} satu gram\n"
             f"Amaran apabila di bawah: RM {target:.2f}\n"
-            f"Masa: {now}\n\n{PAGE_URL}\n",
+            f"Masa: {now}\n\n"
+            f"Tukar sasaran: hantar /sasaran 470 kepada bot ini.\n{PAGE_URL}\n",
         )
     elif is_below and not was_below and cfg.get("enabled", True):
         notify(
@@ -157,16 +278,17 @@ def main():
             f"Sekarang / Now:   RM {price:.2f} satu gram\n"
             f"Sasaran / Target: bawah RM {target:.2f}\n"
             f"Masa / Time:      {now}\n\n"
-            f"Lihat harga / See prices: {PAGE_URL}\n\n"
+            f"Lihat harga / See prices: {PAGE_URL}\n"
+            f"Tukar sasaran: /sasaran <harga>\n\n"
             f"Ini harga pasaran. Harga kedai lebih tinggi kerana upah.\n"
             f"(Market price; shop prices are higher because of workmanship.)\n",
         )
 
-    new_state = {"purity": purity, "target": target, "below": is_below}
-    if new_state != {k: state.get(k) for k in new_state}:
-        new_state["last_price"] = round(price, 2)
-        new_state["checked"] = now
-        STATE.write_text(json.dumps(new_state, indent=2) + "\n")
+    state.update({"purity": purity, "target": target, "below": is_below})
+    if json.dumps(state, sort_keys=True) != before_state:
+        state["last_price"] = round(price, 2)
+        state["checked"] = now
+        STATE.write_text(json.dumps(state, indent=2) + "\n")
         print("state changed")
 
 
