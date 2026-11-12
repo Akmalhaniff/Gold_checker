@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       test:
-        description: "Send a test email now (ignores the target)"
+        description: "Send a test message now (ignores the target)"
         type: boolean
         default: false
 
@@ -24,8 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check price and email if below target
+      - name: Check price and send alert if below target
         env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}

@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
-"""Email an alert when the gold price per gram drops below the target in alert.json.
+"""Send a Telegram (and/or email) alert when the gold price per gram drops below the
+target in alert.json.
 
 Run by .github/workflows/gold-alert.yml on a schedule. Standard library only.
 
 Sends once when the price crosses below the target, then stays quiet until the price
 has gone back above it (state is kept in alert-state.json), so it does not email every hour.
 
-Environment (GitHub repository secrets):
+Environment (GitHub repository secrets) — set Telegram, email, or both:
+  TELEGRAM_BOT_TOKEN         token from @BotFather
+  TELEGRAM_CHAT_ID           chat ID(s) to message, comma-separated (each person must
+                             have pressed Start in the bot once)
   SMTP_USER, SMTP_PASSWORD   login for the sending mailbox (Gmail: an app password)
   ALERT_EMAIL_TO             recipient(s), comma-separated
   SMTP_HOST, SMTP_PORT       optional, default smtp.gmail.com / 465
-  FORCE_TEST=1               send a test email with today's price regardless of target
+  FORCE_TEST=1               send a test message with today's price regardless of target
 """
 import json
 import os
 import smtplib
 import ssl
 import sys
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone, timedelta
 from email.message import EmailMessage
@@ -64,11 +69,32 @@ def pure_price_per_gram_myr():
     return oz_myr / OZ
 
 
+def _list(name):
+    return [a.strip() for a in os.environ.get(name, "").split(",") if a.strip()]
+
+
+def send_telegram(subject, body):
+    token = os.environ["TELEGRAM_BOT_TOKEN"].strip()
+    ok = 0
+    for chat in _list("TELEGRAM_CHAT_ID"):
+        data = json.dumps({"chat_id": chat, "text": f"{subject}\n\n{body}",
+                           "disable_web_page_preview": True}).encode()
+        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=data,
+                                     headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=20) as r:
+                ok += bool(json.load(r).get("ok"))
+        except urllib.error.HTTPError as e:
+            # Most common: 403 = that person has not pressed Start in the bot yet; 400 = wrong chat ID.
+            print(f"telegram send failed for one chat ({e.code}): {e.read().decode(errors='replace')}", file=sys.stderr)
+    print(f"telegram sent to {ok} chat(s)")
+    if not ok:
+        raise SystemExit("Telegram message was not delivered to anyone.")
+
+
 def send_email(subject, body):
     user, password = os.environ.get("SMTP_USER"), os.environ.get("SMTP_PASSWORD")
-    to = [a.strip() for a in os.environ.get("ALERT_EMAIL_TO", "").split(",") if a.strip()]
-    if not (user and password and to):
-        raise SystemExit("Missing SMTP_USER / SMTP_PASSWORD / ALERT_EMAIL_TO secrets.")
+    to = _list("ALERT_EMAIL_TO")
     msg = EmailMessage()
     msg["Subject"], msg["From"], msg["To"] = subject, f"Harga Emas <{user}>", ", ".join(to)
     msg.set_content(body)
@@ -87,6 +113,18 @@ def send_email(subject, body):
     print(f"email sent to {len(to)} recipient(s)")
 
 
+def notify(subject, body):
+    tg = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip() and _list("TELEGRAM_CHAT_ID")
+    mail = os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD") and _list("ALERT_EMAIL_TO")
+    if not (tg or mail):
+        raise SystemExit("No alert channel set up: add TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID "
+                         "(or SMTP_USER + SMTP_PASSWORD + ALERT_EMAIL_TO) repository secrets.")
+    if tg:
+        send_telegram(subject, body)
+    if mail:
+        send_email(subject, body)
+
+
 def main():
     cfg = json.loads(CONFIG.read_text())
     purity = str(cfg.get("purity", "916"))
@@ -103,17 +141,17 @@ def main():
     is_below = price < target
 
     if test:
-        send_email(
-            f"Ujian: Emas {purity} RM {price:.2f}/g",
-            f"Ini emel ujian — amaran harga emas berfungsi.\n"
-            f"(Test email — the gold price alert is working.)\n\n"
+        notify(
+            f"🔔 Ujian: Emas {purity} RM {price:.2f}/g",
+            f"Ini mesej ujian — amaran harga emas berfungsi.\n"
+            f"(Test message — the gold price alert is working.)\n\n"
             f"Emas {purity} sekarang: RM {price:.2f} satu gram\n"
             f"Amaran apabila di bawah: RM {target:.2f}\n"
             f"Masa: {now}\n\n{PAGE_URL}\n",
         )
     elif is_below and not was_below and cfg.get("enabled", True):
-        send_email(
-            f"Harga emas {purity} turun: RM {price:.2f}/g",
+        notify(
+            f"📉 Harga emas {purity} turun: RM {price:.2f}/g",
             f"Harga emas {purity} kini di bawah sasaran anda.\n"
             f"(The {purity} gold price is now below your target.)\n\n"
             f"Sekarang / Now:   RM {price:.2f} satu gram\n"
