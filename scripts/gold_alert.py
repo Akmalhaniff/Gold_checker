@@ -208,6 +208,23 @@ def handle_telegram_commands(cfg, state, pure):
             cfg["enabled"] = True
             changed = True
             reply = f"▶️ Amaran disambung: emas {purity} bawah RM {float(cfg['below']):.2f}."
+        elif cmd in ("/harian", "/daily"):
+            arg = text.split()[1].lower() if len(text.split()) > 1 else ""
+            if arg in ("off", "tutup", "henti"):
+                cfg["daily"] = False
+                changed = True
+                reply = "🔕 Ringkasan harian dihentikan. Hantar /harian on untuk sambung."
+            elif arg in ("on", "buka", "mula") or (arg.isdigit() and 0 <= int(arg) <= 23):
+                cfg["daily"] = True
+                if arg.isdigit():
+                    cfg["daily_hour"] = int(arg)
+                changed = True
+                reply = f"☀️ Ringkasan harian dihantar setiap hari jam {int(cfg.get('daily_hour', 9))}:00."
+            else:
+                on = cfg.get("daily", True)
+                reply = ((f"☀️ Ringkasan harian: setiap hari jam {int(cfg.get('daily_hour', 9))}:00."
+                          if on else "🔕 Ringkasan harian: dihentikan.") +
+                         "\n\n• /harian on · /harian off\n• /harian 8 — tukar ke jam 8 pagi")
         else:
             reply = (f"Sasaran sekarang: emas {purity} bawah RM {float(cfg['below']):.2f} segram"
                      + ("" if cfg.get("enabled", True) else " (dihentikan)") + ".\n"
@@ -216,7 +233,8 @@ def handle_telegram_commands(cfg, state, pure):
                      "• /sasaran 470 — beritahu bila harga bawah RM 470\n"
                      "• /sasaran 999 520 — tukar jenis emas dan harga\n"
                      "• /harga — harga semua jenis emas sekarang\n"
-                     "• /henti — hentikan amaran · /mula — sambung\n\n"
+                     "• /henti — hentikan amaran · /mula — sambung\n"
+                     "• /harian on · /harian off · /harian 8 — ringkasan harga setiap pagi\n\n"
                      "Bot memeriksa mesej setiap 15 minit, jadi balasan mungkin lambat sedikit.")
         tg_send(chat, reply)
     return changed
@@ -283,6 +301,33 @@ def main():
             f"Ini harga pasaran. Harga kedai lebih tinggi kerana upah.\n"
             f"(Market price; shop prices are higher because of workmanship.)\n",
         )
+
+    # Morning summary, once a day (first run in the hour chosen, Malaysia time).
+    now_dt = datetime.now(MYT)
+    today = now_dt.strftime("%Y-%m-%d")
+    hour = int(cfg.get("daily_hour", 9))
+    if (cfg.get("daily", True) and state.get("daily_date") != today
+            and hour <= now_dt.hour < hour + 3):
+        prev = state.get("daily_price") if state.get("daily_purity") == purity else None
+        if prev:
+            d = price - prev
+            chg = ("sama seperti semalam" if abs(d) < 0.01 else
+                   f"{'▲ naik' if d > 0 else '▼ turun'} RM {abs(d):.2f} dari semalam")
+        else:
+            chg = None
+        others = "\n".join(f"Emas {k}: RM {pure * f:.2f}" for k, f in PURITY.items() if k != purity)
+        try:
+            notify(
+                f"☀️ Harga emas pagi ini — {now_dt.strftime('%d %b')}",
+                f"Emas {purity}: RM {price:.2f} segram" + (f"\n({chg})" if chg else "") + "\n\n"
+                f"{others}\n\n"
+                f"🔔 Amaran: emas {purity} bawah RM {target:.2f}"
+                + ("" if cfg.get("enabled", True) else " (dihentikan)") + "\n"
+                f"{PAGE_URL}\n\nTak mahu ringkasan ini? Hantar /harian off",
+            )
+            state.update({"daily_date": today, "daily_price": round(price, 2), "daily_purity": purity})
+        except (Exception, SystemExit) as e:   # never let the summary block the alert state below
+            print(f"daily summary not sent: {e}", file=sys.stderr)
 
     state.update({"purity": purity, "target": target, "below": is_below})
     if json.dumps(state, sort_keys=True) != before_state:

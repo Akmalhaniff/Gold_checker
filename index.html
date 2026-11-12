@@ -9,7 +9,8 @@
 <meta name="theme-color" content="#fbf7ee" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#14110a" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23c9971c'/%3E%3Cpath d='M12 46l6-14h28l6 14z' fill='%23fff3c4'/%3E%3Cpath d='M21 29l4-10h14l4 10z' fill='%23ffe08a'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23c9971c'/%3E%3Cpath d='M12 46l6-14h28l6 14z' fill='%23fff3c4'/%3E%3Cpath d='M21 29l4-10h14l4 10z' fill='%23ffe08a'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <title>Harga Emas</title>
 <style>
   :root{
@@ -70,17 +71,55 @@
 
   /* calculator */
   .calc{display:flex;align-items:center;gap:10px}
-  .calc .in{flex:1;min-width:0;display:flex;align-items:center;background:var(--soft);border:1.5px solid transparent;border-radius:16px;padding:0 16px}
-  .calc .in:focus-within{border-color:var(--gold2)}
-  .calc input{flex:1;min-width:0;width:100%;border:0;background:none;color:var(--fg);font-size:24px;font-weight:700;padding:14px 0;outline:none;font-variant-numeric:tabular-nums}
-  .calc .in span{color:var(--muted);font-weight:650}
+  .in{flex:1;min-width:0;display:flex;align-items:center;background:var(--soft);border:1.5px solid transparent;border-radius:16px;padding:0 16px}
+  .in:focus-within{border-color:var(--gold2)}
+  .in input{flex:1;min-width:0;width:100%;border:0;background:none;color:var(--fg);font-size:24px;font-weight:700;padding:14px 0;outline:none;font-variant-numeric:tabular-nums}
+  .in span{color:var(--muted);font-weight:650;white-space:nowrap;margin-left:6px}
   .result{margin-top:14px;font-size:15px;color:var(--muted)}
   .result b{display:block;font-size:30px;color:var(--fg);font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
   .small{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.5}
+  .fields{display:flex;gap:10px;margin-top:10px}
+  .fields .in{flex:1}
+  .in.sm input{font-size:20px;padding:11px 0}
+  .unitsel{display:flex;background:var(--soft);border-radius:12px;padding:3px;flex:none}
+  .unitsel button{border:0;background:none;padding:0 12px;border-radius:9px;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer}
+  .unitsel button.on{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+  .lines{margin-top:14px;border-top:1px solid var(--line);padding-top:6px}
+  .line{display:flex;justify-content:space-between;padding:6px 0;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .line b{color:var(--fg);white-space:nowrap}
+  .line{gap:12px;align-items:baseline}
+  .line.total{font-size:17px;border-top:1px solid var(--line);margin-top:4px;padding-top:10px}
+  .line.total b{font-size:24px;font-weight:800}
+  .good{color:var(--up)!important} .bad{color:var(--down)!important}
+
+  /* collection */
+  .sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .sum div{background:var(--soft);border-radius:14px;padding:10px 12px;font-size:13px;color:var(--muted)}
+  .sum b{display:block;color:var(--fg);font-size:18px;font-variant-numeric:tabular-nums}
+  .items{list-style:none;margin:0;padding:0}
+  .item{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .item:last-child{border-bottom:0}
+  .item .nm{flex:1;min-width:0}
+  .item .nm b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .nm span{font-size:13px;color:var(--muted)}
+  .item .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  .item .val span{display:block;font-size:13px;font-weight:650}
+  .empty{color:var(--muted);font-size:15px;text-align:center;padding:10px 0 4px}
+  .form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .form .full{grid-column:1/-1}
+  .form label{display:block;font-size:12.5px;color:var(--muted);font-weight:650;margin-bottom:4px}
+  .form input,.form select{width:100%;font:inherit;font-size:16px;padding:11px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--fg)}
+  .form input:focus{outline:none;border-color:var(--gold2)}
+  .btns{display:flex;gap:10px;margin-top:14px}
+  .btn{flex:1;border:0;border-radius:14px;padding:13px;font-weight:750;font-size:16px;cursor:pointer;background:var(--soft);color:var(--fg)}
+  .btn.primary{background:var(--gold2);color:var(--onGold)}
+  .btn.danger{background:var(--downBg);color:var(--down);flex:none;padding:13px 16px}
+  .linkbtns{display:flex;justify-content:center;gap:18px;margin-top:14px}
+  .linkbtns button,.linkbtns label{border:0;background:none;color:var(--muted);font-size:13.5px;text-decoration:underline;cursor:pointer;padding:4px}
 
   /* chart */
   .seg{display:flex;background:var(--soft);border-radius:12px;padding:3px;margin-bottom:10px}
-  .seg button{flex:1;border:0;background:none;padding:8px 0;border-radius:10px;font-size:14.5px;font-weight:650;color:var(--muted);cursor:pointer}
+  .seg button{flex:1;border:0;background:none;padding:8px 0;border-radius:10px;font-size:13.5px;font-weight:650;color:var(--muted);cursor:pointer}
   .seg button.on{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
   #chart{width:100%;height:160px;display:block;touch-action:pan-y}
   .tip{text-align:center;font-size:15px;font-weight:650;min-height:22px;margin-top:8px;font-variant-numeric:tabular-nums}
@@ -141,24 +180,64 @@
     <div class="alert" id="alert" hidden></div>
   </section>
 
-  <!-- CALCULATOR -->
+  <!-- CALCULATORS -->
   <section class="card">
     <h2 data-t="calcTitle"></h2>
+    <div class="seg" id="mode">
+      <button data-m="worth"></button><button data-m="shop"></button><button data-m="check"></button>
+    </div>
     <div class="calc">
       <label class="in">
         <input id="grams" type="text" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="grams">
         <span data-t="grams"></span>
       </label>
     </div>
-    <div class="result" id="result" hidden></div>
-    <p class="small" data-t="calcNote"></p>
+    <div class="fields" id="f-worth">
+      <label class="in sm"><input id="buyback" type="text" inputmode="decimal" placeholder="93" aria-label="buyback"><span data-t="buybackLbl"></span></label>
+    </div>
+    <div class="fields" id="f-shop">
+      <label class="in sm"><input id="upah" type="text" inputmode="decimal" placeholder="0" aria-label="upah"><span data-t="upahLbl"></span></label>
+      <div class="unitsel" id="upahUnit"><button data-u="rm">RM/g</button><button data-u="pct">%</button></div>
+    </div>
+    <div class="fields" id="f-check">
+      <label class="in sm"><span style="margin:0 6px 0 0">RM</span><input id="quote" type="text" inputmode="decimal" placeholder="0" aria-label="quote"><span data-t="quoteLbl"></span></label>
+    </div>
+    <div class="lines" id="calcOut" hidden></div>
+    <p class="small" id="calcNote"></p>
+  </section>
+
+  <!-- COLLECTION -->
+  <section class="card">
+    <h2 data-t="colTitle"></h2>
+    <div class="sum" id="colSum" hidden></div>
+    <ul class="items" id="items"></ul>
+    <details id="addBox">
+      <summary id="addSummary"></summary>
+      <form class="form" id="itemForm" autocomplete="off">
+        <div class="full"><label for="i-name" data-t="iName"></label><input id="i-name" maxlength="60" required></div>
+        <div><label for="i-g" data-t="iGrams"></label><input id="i-g" inputmode="decimal" required></div>
+        <div><label for="i-p" data-t="iPurity"></label><select id="i-p"></select></div>
+        <div><label for="i-cost" data-t="iCost"></label><input id="i-cost" inputmode="decimal"></div>
+        <div><label for="i-date" data-t="iDate"></label><input id="i-date" type="date"></div>
+        <div class="full btns">
+          <button type="button" class="btn danger" id="i-del" hidden>🗑</button>
+          <button type="button" class="btn" id="i-cancel" data-t="cancel"></button>
+          <button type="submit" class="btn primary" data-t="save"></button>
+        </div>
+      </form>
+    </details>
+    <p class="small" data-t="colNote"></p>
+    <div class="linkbtns">
+      <button type="button" id="exportBtn" data-t="backup"></button>
+      <label><span data-t="restore"></span><input type="file" id="importFile" accept="application/json,.json" hidden></label>
+    </div>
   </section>
 
   <!-- TREND -->
   <section class="card">
     <h2 data-t="trendTitle"></h2>
     <div class="seg" id="range">
-      <button data-d="7"></button><button data-d="30"></button><button data-d="90"></button>
+      <button data-d="7"></button><button data-d="30"></button><button data-d="90"></button><button data-d="180"></button><button data-d="365"></button>
     </div>
     <svg id="chart" viewBox="0 0 400 160" preserveAspectRatio="none"></svg>
     <div class="tip" id="tip">&nbsp;</div>
@@ -214,9 +293,23 @@ const T = {
     title:'Harga Emas', perGram:'satu gram', gold:'Emas', today:'hari ini',
     up:'Naik', down:'Turun', same:'Sama seperti semalam', sinceY:'dari semalam',
     updated:'Dikemas kini', loading:'Memuatkan…',
-    calcTitle:'Berapa nilai barang kemas saya?', grams:'gram',
-    worth:'Anggaran nilai emas', calcNote:'Kedai biasanya beli sedikit lebih rendah, dan jual lebih tinggi kerana upah.',
-    trendTitle:'Harga sejak kebelakangan ini', d7:'7 hari', d30:'1 bulan', d90:'3 bulan',
+    calcTitle:'Kalkulator barang kemas', grams:'gram',
+    m_worth:'Nilai emas', m_shop:'Harga kedai', m_check:'Semak harga',
+    buybackLbl:'% jual balik', upahLbl:'upah', quoteLbl:'harga kedai',
+    goldValue:'Nilai emas', buybackEst:'Anggaran jika jual balik ke kedai', upahAmt:'Upah', shopEst:'Anggaran harga kedai',
+    shopTotal:'Harga kedai', upahPerG:'Upah segram', overMarket:'Lebih dari harga emas',
+    belowMarket:'⚠️ Harga ini di bawah nilai emas — semak semula berat atau jenis emas.',
+    noteWorth:'Kedai biasanya beli balik 90–95% dari harga pasaran (ditolak susut). Tukar % ikut kedai.',
+    noteShop:'Upah berbeza ikut kedai dan rekaan. Tanya kedai upah segram, atau guna %.',
+    noteCheck:'Masukkan jumlah harga yang kedai beri untuk barang itu. Bandingkan upah segram antara kedai.',
+    colTitle:'Koleksi barang kemas saya', addItem:'＋ Tambah barang kemas', editItem:'Ubah barang kemas',
+    iName:'Nama (cth. Gelang tangan)', iGrams:'Berat (gram)', iPurity:'Jenis emas', iCost:'Harga beli (RM)', iDate:'Tarikh beli',
+    save:'Simpan', cancel:'Batal', confirmDel:'Padam barang ini?',
+    totalWeight:'Jumlah berat', nowValue:'Nilai emas sekarang', paid:'Jumlah dibeli', gain:'Untung / rugi (nilai emas)',
+    empty:'Belum ada barang. Tekan "Tambah barang kemas".',
+    colNote:'Disimpan dalam telefon ini sahaja. Nilai dikira ikut harga emas pasaran (tanpa upah), jadi biasanya lebih rendah dari harga beli.',
+    backup:'Simpan salinan', restore:'Pulihkan salinan', restored:'Koleksi dipulihkan: {n} barang.', badFile:'Fail tidak sah.',
+    trendTitle:'Harga sejak kebelakangan ini', d7:'7 hari', d30:'1 bulan', d90:'3 bulan', d180:'6 bulan', d365:'1 tahun',
     lowest:'Paling rendah', highest:'Paling tinggi', overPeriod:'dalam', tapHint:'Sentuh graf untuk lihat harga hari itu',
     allTitle:'Semua jenis emas (satu gram)', more:'Maklumat lanjut',
     pure:'Emas tulen / gram', oz:'Satu auns (31.1 g)', tael:'Satu tahil (37.5 g)', spot:'Harga dunia (USD/auns)',
@@ -230,9 +323,23 @@ const T = {
     title:'Gold Price', perGram:'per gram', gold:'Gold', today:'today',
     up:'Up', down:'Down', same:'Same as yesterday', sinceY:'since yesterday',
     updated:'Updated', loading:'Loading…',
-    calcTitle:'How much is my jewellery worth?', grams:'grams',
-    worth:'Estimated gold value', calcNote:'Shops usually buy back a little lower, and sell higher because of workmanship (upah).',
-    trendTitle:'Recent price', d7:'7 days', d30:'1 month', d90:'3 months',
+    calcTitle:'Jewellery calculator', grams:'grams',
+    m_worth:'Gold value', m_shop:'Shop price', m_check:'Check a quote',
+    buybackLbl:'% buy-back', upahLbl:'workmanship', quoteLbl:'shop price',
+    goldValue:'Gold value', buybackEst:'Estimate if sold back to a shop', upahAmt:'Workmanship (upah)', shopEst:'Estimated shop price',
+    shopTotal:'Shop price', upahPerG:'Workmanship per gram', overMarket:'Above gold value',
+    belowMarket:'⚠️ This is below the gold value — check the weight or gold type.',
+    noteWorth:'Shops usually buy back at 90–95% of market price. Change the % to match the shop.',
+    noteShop:'Workmanship differs by shop and design. Ask the shop for upah per gram, or use %.',
+    noteCheck:'Enter the total price the shop quotes for the item. Compare workmanship per gram between shops.',
+    colTitle:'My jewellery collection', addItem:'＋ Add jewellery', editItem:'Edit jewellery',
+    iName:'Name (e.g. Bracelet)', iGrams:'Weight (grams)', iPurity:'Gold type', iCost:'Price paid (RM)', iDate:'Date bought',
+    save:'Save', cancel:'Cancel', confirmDel:'Delete this item?',
+    totalWeight:'Total weight', nowValue:'Gold value now', paid:'Total paid', gain:'Gain / loss (gold value)',
+    empty:'No items yet. Tap "Add jewellery".',
+    colNote:'Saved on this phone only. Value uses the market gold price (no workmanship), so it is usually lower than the price paid.',
+    backup:'Save a backup', restore:'Restore backup', restored:'Collection restored: {n} items.', badFile:'Not a valid file.',
+    trendTitle:'Recent price', d7:'7 days', d30:'1 month', d90:'3 months', d180:'6 months', d365:'1 year',
     lowest:'Lowest', highest:'Highest', overPeriod:'over', tapHint:'Touch the chart to see that day’s price',
     allTitle:'All gold types (per gram)', more:'More details',
     pure:'Pure gold / gram', oz:'One ounce (31.1 g)', tael:'One tael (37.5 g)', spot:'World price (USD/oz)',
@@ -251,7 +358,12 @@ const store = {
   get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-const prefs = Object.assign({ cur:'myr', days:30, purity:'916', lang:'ms', grams:'' }, store.get(PREFS) || {});
+const prefs = Object.assign({ cur:'myr', days:30, purity:'916', lang:'ms', grams:'', mode:'worth', buyback:'93', upah:'', upahUnit:'rm', quote:'' }, store.get(PREFS) || {});
+const ITEMS = 'goldPrice.items.v1';
+let items = store.get(ITEMS) || [];
+const saveItems = () => store.set(ITEMS, items);
+const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const n = parseFloat(String(v ?? '').replace(/,/g, '.').replace(/[^0-9.]/g, '')); return isFinite(n) ? n : NaN; };
 const savePrefs = () => store.set(PREFS, prefs);
 let cache = store.get(CACHE) || { hist:{}, live:null };
 let alertCfg = null;   // from alert.json (the target used by the email alert)
@@ -297,16 +409,23 @@ async function update(){
   try {
     const latest = await fetchDay('latest');
     cache.hist[latest.date] = latest.rates;
+    // Daily points up to 3 months; every 3rd day for 6 months, every 7th day for 1 year
+    // (past days never change, so each one is downloaded only once and then kept).
     const need = [];
+    const step = prefs.days <= 90 ? 1 : prefs.days <= 180 ? 3 : 7;
     for (let i = 1; i <= prefs.days; i++){
+      if (i > 30 && i % step) continue;
       const tag = daysAgo(i);
       if (tag < latest.date && !cache.hist[tag]) need.push(tag);
     }
-    const got = await Promise.allSettled(need.map(fetchDay));
-    got.forEach(g => { if (g.status === 'fulfilled') cache.hist[g.value.date] = g.value.rates; });
+    for (let i = 0; i < need.length; i += 12){   // a few at a time, to be gentle on the data source
+      const got = await Promise.allSettled(need.slice(i, i + 12).map(fetchDay));
+      got.forEach(g => { if (g.status === 'fulfilled') cache.hist[g.value.date] = g.value.rates; });
+    }
 
     const keep = ['myr','usd','sgd','idr','eur','gbp'];
-    const dates = Object.keys(cache.hist).sort().slice(-120);
+    const oldest = daysAgo(372);
+    const dates = Object.keys(cache.hist).sort().filter(d => d >= oldest);
     cache.hist = Object.fromEntries(dates.map(d => [d, Object.fromEntries(keep.map(c => [c, cache.hist[d][c]]))]));
     cache.live = await fetchLive() || cache.live;
     cache.fetchedAt = new Date().toISOString();
@@ -352,6 +471,11 @@ function applyText(){
   document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
   document.querySelectorAll('#range button').forEach(b => { b.textContent = t('d' + b.dataset.d); b.classList.toggle('on', +b.dataset.d === prefs.days); });
   document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === prefs.lang));
+  document.querySelectorAll('#mode button').forEach(b => { b.textContent = t('m_' + b.dataset.m); b.classList.toggle('on', b.dataset.m === prefs.mode); });
+  ['worth','shop','check'].forEach(m => $('f-' + m).hidden = m !== prefs.mode);
+  document.querySelectorAll('#upahUnit button').forEach(b => b.classList.toggle('on', b.dataset.u === prefs.upahUnit));
+  $('calcNote').textContent = t('note' + prefs.mode[0].toUpperCase() + prefs.mode.slice(1));
+  $('addSummary').textContent = editing ? t('editItem') : t('addItem');
   $('chips').innerHTML = PURITIES.map(p => `<button class="chip ${p.k===prefs.purity?'on':''}" data-p="${p.k}">${p.k}</button>`).join('');
 }
 
@@ -394,12 +518,8 @@ function render(){
     al.innerHTML = `🔔 ${hit ? `<b>${t('alertHit')}</b><br>` : ''}${t('alertSet').replace('{p}', ap.k)} <b>${money(+alertCfg.below, 'myr')}</b>`;
   } else al.hidden = true;
 
-  // calculator
-  const grams = parseFloat(String(prefs.grams).replace(',', '.'));
-  if (grams > 0){
-    $('result').hidden = false;
-    $('result').innerHTML = `${t('worth')} · ${grams} g ${pu.k}<b>${money(grams * g)}</b>`;
-  } else $('result').hidden = true;
+  renderCalc(g, pu);
+  renderCollection();
 
   // all purities
   $('all').innerHTML = PURITIES.map(p => `
@@ -418,6 +538,76 @@ function render(){
   drawChart(pu);
 }
 
+// Pure-gold price per gram in RM (live-adjusted), whatever display currency is chosen.
+function pureMyrNow(){
+  const dates = Object.keys(cache.hist).sort();
+  if (!dates.length) return null;
+  const td = cache.hist[dates[dates.length-1]];
+  return td.myr ? td.myr * (cache.live && td.usd ? cache.live.usd / td.usd : 1) / OZ : null;
+}
+const line = (label, value, cls = '') => `<div class="line ${cls}"><span>${label}</span><b>${value}</b></div>`;
+
+function renderCalc(g, pu){
+  const out = $('calcOut'), grams = num(prefs.grams);
+  if (!(grams > 0)){ out.hidden = true; return; }
+  const value = grams * g, label = `${grams} g · ${pu.k}`;
+  let html = '';
+  if (prefs.mode === 'worth'){
+    const bb = num(prefs.buyback) > 0 ? num(prefs.buyback) : 93;
+    html = line(`${t('goldValue')} (${label})`, money(value), 'total') +
+           line(`${t('buybackEst')} (${bb}%)`, money(value * bb / 100));
+  } else if (prefs.mode === 'shop'){
+    const u = num(prefs.upah) || 0;
+    const upah = prefs.upahUnit === 'pct' ? value * u / 100 : grams * u;
+    html = line(`${t('goldValue')} (${label})`, money(value)) +
+           line(`${t('upahAmt')} (${prefs.upahUnit === 'pct' ? u + '%' : money(u) + '/g'})`, money(upah)) +
+           line(t('shopEst'), money(value + upah), 'total');
+  } else {
+    const q = num(prefs.quote);
+    if (!(q > 0)){ out.hidden = true; return; }
+    const upah = q - value;
+    html = line(`${t('goldValue')} (${label})`, money(value)) + line(t('shopTotal'), money(q)) +
+      (upah < 0 ? `<p class="small bad">${t('belowMarket')}</p>`
+                : line(t('upahPerG'), money(upah / grams) + '/g', 'total') +
+                  line(t('overMarket'), `${money(upah)} (${(upah / value * 100).toFixed(1)}%)`));
+  }
+  out.innerHTML = html; out.hidden = false;
+}
+
+// ---------- collection ----------
+let editing = null;   // id of the item being edited
+function renderCollection(){
+  const pm = pureMyrNow();
+  const fp = k => (PURITIES.find(p => p.k === k) || PURITIES[0]).f;
+  if (!items.length){ $('items').innerHTML = `<li class="empty">${t('empty')}</li>`; $('colSum').hidden = true; return; }
+  let tw = 0, tv = 0, tc = 0, tvc = 0;
+  $('items').innerHTML = items.map(it => {
+    const v = pm != null ? it.g * fp(it.p) * pm : null;
+    tw += it.g; if (v != null) tv += v;
+    if (it.cost > 0 && v != null){ tc += it.cost; tvc += v; }
+    const d = it.cost > 0 && v != null ? v - it.cost : null;
+    return `<li class="item" data-id="${esc(it.id)}">
+      <div class="nm"><b>${esc(it.name)}</b><span>${it.g} g · ${esc(it.p)}${it.cost > 0 ? ' · ' + money(it.cost, 'myr') : ''}${it.date ? ' · ' + esc(it.date) : ''}</span></div>
+      <div class="val">${money(v, 'myr')}${d != null ? `<span class="${d >= 0 ? 'good' : 'bad'}">${d >= 0 ? '+' : '−'}${money(Math.abs(d), 'myr')}</span>` : ''}</div>
+    </li>`;
+  }).join('');
+  const gain = tc > 0 ? tvc - tc : null;
+  $('colSum').hidden = false;
+  $('colSum').innerHTML =
+    `<div>${t('totalWeight')}<b>${+tw.toFixed(2)} g</b></div><div>${t('nowValue')}<b>${money(tv, 'myr')}</b></div>` +
+    (tc > 0 ? `<div>${t('paid')}<b>${money(tc, 'myr')}</b></div><div>${t('gain')}<b class="${gain >= 0 ? 'good' : 'bad'}">${gain >= 0 ? '+' : '−'}${money(Math.abs(gain), 'myr')}</b></div>` : '');
+}
+function openForm(it){
+  editing = it ? it.id : null;
+  $('i-name').value = it?.name || ''; $('i-g').value = it?.g || ''; $('i-p').value = it?.p || prefs.purity;
+  $('i-cost').value = it?.cost || ''; $('i-date').value = it?.date || '';
+  $('i-del').hidden = !it;
+  $('addBox').open = true;
+  applyText();
+  $('addBox').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+function closeForm(){ editing = null; $('itemForm').reset(); $('addBox').open = false; applyText(); }
+
 let chartDefault = '';
 function drawChart(pu){
   const svg = $('chart');
@@ -428,7 +618,8 @@ function drawChart(pu){
 
   const W = 400, H = 160, Pd = 10;
   const vs = pts.map(p => p.v), lo = Math.min(...vs), hi = Math.max(...vs), span = (hi - lo) || 1;
-  const x = i => Pd + i * (W - 2*Pd) / (pts.length - 1);
+  const t0 = Date.parse(pts[0].d), t1 = Date.parse(pts[pts.length-1].d), tspan = (t1 - t0) || 1;
+  const x = i => Pd + (Date.parse(pts[i].d) - t0) / tspan * (W - 2*Pd);
   const y = v => H - Pd - (v - lo) / span * (H - 2*Pd);
   const line = pts.map((p,i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
   svg.innerHTML = `
@@ -448,7 +639,8 @@ function drawChart(pu){
   const pick = ev => {
     const r = svg.getBoundingClientRect();
     const cx = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) / r.width * W;
-    const i = Math.max(0, Math.min(pts.length - 1, Math.round((cx - Pd) / (W - 2*Pd) * (pts.length - 1))));
+    let i = 0;
+    pts.forEach((_, j) => { if (Math.abs(x(j) - cx) < Math.abs(x(i) - cx)) i = j; });
     const c = $('cross'); c.setAttribute('x1', x(i)); c.setAttribute('x2', x(i)); c.setAttribute('opacity', '.7');
     $('tip').textContent = `${niceDate(pts[i].d)} · ${money(pts[i].v)}`;
     $('tip').style.color = 'var(--fg)';
@@ -465,8 +657,50 @@ document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click
 document.querySelectorAll('#range button').forEach(b => b.addEventListener('click', () => { prefs.days = +b.dataset.d; savePrefs(); render(); update(); }));
 $('cur').addEventListener('change', e => { prefs.cur = e.target.value; savePrefs(); render(); });
 $('refresh').addEventListener('click', update);
-$('grams').value = prefs.grams;
-$('grams').addEventListener('input', e => { prefs.grams = e.target.value.replace(/[^0-9.,]/g, ''); e.target.value = prefs.grams; savePrefs(); render(); });
+['grams','buyback','upah','quote'].forEach(id => {
+  $(id).value = prefs[id];
+  $(id).addEventListener('input', e => { prefs[id] = e.target.value.replace(/[^0-9.,]/g, ''); e.target.value = prefs[id]; savePrefs(); render(); });
+});
+document.querySelectorAll('#mode button').forEach(b => b.addEventListener('click', () => { prefs.mode = b.dataset.m; savePrefs(); render(); }));
+document.querySelectorAll('#upahUnit button').forEach(b => b.addEventListener('click', () => { prefs.upahUnit = b.dataset.u; savePrefs(); render(); }));
+
+$('i-p').innerHTML = PURITIES.map(p => `<option value="${p.k}">${p.k} (${p.karat})</option>`).join('');
+$('addBox').addEventListener('toggle', () => { if (!$('addBox').open && editing){ editing = null; $('itemForm').reset(); applyText(); } });
+$('items').addEventListener('click', e => { const li = e.target.closest('[data-id]'); if (li) openForm(items.find(i => i.id === li.dataset.id)); });
+$('itemForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const g = num($('i-g').value);
+  if (!(g > 0)){ $('i-g').focus(); return; }
+  const it = { id: editing || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: $('i-name').value.trim() || '—', g, p: $('i-p').value, cost: num($('i-cost').value) || 0, date: $('i-date').value };
+  const ix = items.findIndex(i => i.id === it.id);
+  ix >= 0 ? items[ix] = it : items.push(it);
+  saveItems(); closeForm(); render();
+});
+$('i-cancel').addEventListener('click', closeForm);
+$('i-del').addEventListener('click', () => {
+  if (!confirm(t('confirmDel'))) return;
+  items = items.filter(i => i.id !== editing); saveItems(); closeForm(); render();
+});
+$('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({ app:'harga-emas', items }, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `koleksi-emas-${iso(new Date())}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('importFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    const list = (Array.isArray(j) ? j : j.items).filter(i => i && num(i.g) > 0).map(i => ({
+      id: String(i.id || Math.random().toString(36).slice(2)), name: String(i.name || '—').slice(0, 60), g: num(i.g),
+      p: PURITIES.some(p => p.k === String(i.p)) ? String(i.p) : '916', cost: num(i.cost) || 0, date: String(i.date || '').slice(0, 10) }));
+    items = list; saveItems(); render(); alert(t('restored').replace('{n}', list.length));
+  } catch { alert(t('badFile')); }
+});
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
 // Show saved prices instantly, then fetch fresh ones; re-check when reopened and every 30 min.
 render();

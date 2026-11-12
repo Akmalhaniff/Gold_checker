@@ -1,5 +1,7 @@
 {
   "purity": "916",
   "below": 468.0,
-  "enabled": true
+  "enabled": true,
+  "daily": true,
+  "daily_hour": 9
 }

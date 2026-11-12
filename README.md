@@ -5,11 +5,17 @@ A one-page daily gold price checker (`index.html`).
 - Opens on today's **916 (22K)** price per gram in RM, with a plain "up/down since
   yesterday" note. Tap 999, 835, 750 or 375 to switch (the choice is remembered).
 - Bahasa Melayu by default, with an English switch.
-- "How much is my jewellery worth?" calculator: type the grams, get the gold value.
-- A 7-day / 1-month / 3-month chart with the lowest and highest price.
+- **Jewellery calculator** with three tabs:
+  - *Nilai emas* — gold value of a weight, plus an estimate if sold back to a shop (buy-back %).
+  - *Harga kedai* — estimated shop price = gold value + workmanship (RM per gram or %).
+  - *Semak harga* — enter a shop's quote to see the workmanship per gram and % above gold value.
+- **My jewellery collection** — add items (name, weight, gold type, price paid, date) to see
+  their gold value now and gain/loss. Saved on the phone only; *Simpan salinan* downloads a
+  backup file and *Pulihkan salinan* restores it (e.g. on a new phone).
+- Chart: 7 days, 1, 3, 6 months or 1 year, with the lowest and highest price.
+- Installable app: home-screen icon, opens offline with the last saved prices
+  (`manifest.json`, `sw.js`, `icons/`).
 - "More details" has pure gold, ounce, tael, world USD price and other currencies.
-- Refreshes each time you open it and every 30 minutes while open; the last prices are
-  saved on the device so it still shows something offline.
 
 On iPhone: open the page in Safari → Share → **Add to Home Screen** for a one-tap app.
 
@@ -24,10 +30,14 @@ A GitHub Actions job (`.github/workflows/gold-alert.yml`) runs **on GitHub's ser
 15 minutes** — no PC or phone needs to stay on. It sends **one Telegram message** when the
 price goes below your target, then stays quiet until the price has gone back above the target.
 
+**Morning summary:** every day at 9:00 (Malaysia time) the bot sends the 916 price, the
+change since yesterday and the other gold types. Change the hour with `/harian 8`, or
+turn it off with `/harian off` (stored as `"daily"` / `"daily_hour"` in `alert.json`).
+
 **Change the target — any of these:**
 - **Telegram:** send the bot `/sasaran 470` (916 below RM 470/g), `/sasaran 999 520`
   (change gold type too), or just `470`. Other commands: `/harga` (prices now),
-  `/henti` (pause), `/mula` (resume). The bot replies within ~15 minutes (it only checks
+  `/henti` (pause), `/mula` (resume), `/harian on|off|8` (morning summary on/off/hour). The bot replies within ~15 minutes (it only checks
   messages when the job runs). Only chat IDs in `TELEGRAM_CHAT_ID` can change settings.
 - **GitHub:** Actions → Gold price alert → Run workflow → type the price in the box.
 - **By hand:** edit `alert.json` (`"below"`, `"purity"`, `"enabled"`).
