@@ -63,6 +63,10 @@
   .pill.up{background:var(--upBg);color:var(--up)}
   .pill.down{background:var(--downBg);color:var(--down)}
   .updated{font-size:13.5px;color:var(--muted);margin-top:12px}
+  .alert{display:block;line-height:1.5;margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--soft);font-size:14.5px;color:var(--muted)}
+  .alert b{color:var(--fg)}
+  .alert.hit{background:var(--upBg);color:var(--up)}
+  .alert.hit b{color:var(--up)}
 
   /* calculator */
   .calc{display:flex;align-items:center;gap:10px}
@@ -134,6 +138,7 @@
     <div class="unit" data-t="perGram"></div>
     <div class="pill" id="pill">…</div>
     <div class="updated" id="updated"></div>
+    <div class="alert" id="alert" hidden></div>
   </section>
 
   <!-- CALCULATOR -->
@@ -219,6 +224,7 @@ const T = {
     foot:'Harga pasaran emas, bukan harga kedai. Kedai menambah upah dan caj lain.', source:'Data:',
     errOld:'Tidak dapat kemas kini — menunjukkan harga terakhir yang disimpan.',
     errNone:'Tidak dapat memuatkan harga. Semak internet dan tekan butang muat semula.',
+    alertSet:'Emel amaran jika emas {p} di bawah', alertHit:'Harga di bawah sasaran anda',
   },
   en: {
     title:'Gold Price', perGram:'per gram', gold:'Gold', today:'today',
@@ -234,6 +240,7 @@ const T = {
     foot:'Market gold price, not the shop price. Shops add workmanship and other charges.', source:'Data:',
     errOld:'Couldn’t update — showing the last saved prices.',
     errNone:'Couldn’t load prices. Check the internet and tap refresh.',
+    alertSet:'Email alert when {p} gold is below', alertHit:'Price is below your target',
   },
 };
 
@@ -247,6 +254,9 @@ const store = {
 const prefs = Object.assign({ cur:'myr', days:30, purity:'916', lang:'ms', grams:'' }, store.get(PREFS) || {});
 const savePrefs = () => store.set(PREFS, prefs);
 let cache = store.get(CACHE) || { hist:{}, live:null };
+let alertCfg = null;   // from alert.json (the target used by the email alert)
+fetch('alert.json', { cache:'no-cache' }).then(r => r.ok ? r.json() : null)
+  .then(j => { if (j && j.enabled !== false && +j.below > 0){ alertCfg = j; render(); } }).catch(() => {});
 const t = k => T[prefs.lang][k];
 
 const dailyUrls = tag => [
@@ -371,6 +381,18 @@ function render(){
 
   const when = cache.fetchedAt ? new Date(cache.fetchedAt) : null;
   $('updated').textContent = when ? `${t('updated')} ${timeStr(when)}` : '';
+
+  // email-alert target
+  const al = $('alert');
+  if (alertCfg){
+    const ap = PURITIES.find(p => p.k === String(alertCfg.purity)) || PURITIES[0];
+    const td = cache.hist[P.today];   // the target is in RM, whatever currency is shown
+    const pureMyr = td.myr ? td.myr * (cache.live && td.usd ? cache.live.usd / td.usd : 1) / OZ : null;
+    const hit = pureMyr != null && pureMyr * ap.f < +alertCfg.below;
+    al.hidden = false;
+    al.className = 'alert' + (hit ? ' hit' : '');
+    al.innerHTML = `🔔 ${hit ? `<b>${t('alertHit')}</b><br>` : ''}${t('alertSet').replace('{p}', ap.k)} <b>${money(+alertCfg.below, 'myr')}</b>`;
+  } else al.hidden = true;
 
   // calculator
   const grams = parseFloat(String(prefs.grams).replace(',', '.'));
