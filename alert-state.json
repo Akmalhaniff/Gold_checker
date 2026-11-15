@@ -1,9 +1,9 @@
 {
   "purity": "916",
   "target": 468.0,
-  "below": true,
-  "last_price": 467.73,
-  "checked": "14 Nov 2026, 10:31 AM",
+  "below": false,
+  "last_price": 469.69,
+  "checked": "16 Nov 2026, 07:56 AM",
   "tg_offset": 92918714,
   "daily_date": "2026-11-14",
   "daily_price": 467.73,
